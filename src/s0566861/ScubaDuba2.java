@@ -1,19 +1,19 @@
 package s0566861;
 
-import lenz.htw.ai4g.ai.AI;
-import lenz.htw.ai4g.ai.DivingAction;
-import lenz.htw.ai4g.ai.Info;
-import lenz.htw.ai4g.ai.PlayerAction;
+        import lenz.htw.ai4g.ai.AI;
+        import lenz.htw.ai4g.ai.DivingAction;
+        import lenz.htw.ai4g.ai.Info;
+        import lenz.htw.ai4g.ai.PlayerAction;
 
-import java.awt.*;
-import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
-import java.awt.geom.PathIterator;
-import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.Arrays;
+        import java.awt.*;
+        import java.awt.geom.Line2D;
+        import java.awt.geom.Path2D;
+        import java.awt.geom.PathIterator;
+        import java.awt.geom.Point2D;
+        import java.util.ArrayList;
+        import java.util.Arrays;
 
-public class ScubaDubaAI extends AI {
+public class ScubaDuba2 extends AI {
 
     private Point2D target;
 
@@ -25,10 +25,11 @@ public class ScubaDubaAI extends AI {
     private Point2D playerPos = new Point2D.Double(info.getX(), info.getY());
     private boolean stuck = false;
     private float stuckLimit = 0;
+    boolean clockwise = false;
 
 
 
-    public ScubaDubaAI(Info info) {
+    public ScubaDuba2(Info info) {
         super(info);
 
         enlistForTournament(566861);
@@ -36,7 +37,7 @@ public class ScubaDubaAI extends AI {
 
     @Override
     public String getName() {
-        return "ScubaDuba";
+        return "ScubaDuba2";
     }
 
     @Override
@@ -52,20 +53,20 @@ public class ScubaDubaAI extends AI {
     @Override
     public PlayerAction update() {
 
-       // System.out.println(stuckLimit + " " + playerPos.distance(new Point2D.Double(info.getX(), info.getY())) + " " + stuck);
+        //System.out.println(stuckLimit + " " + playerPos.distance(new Point2D.Double(info.getX(), info.getY())) + " " + stuck);
 
         // System.out.println(info.getX() + " " + info.getY() + "    " + playerPos.getX() + " " +playerPos.getY() + "     " + playerPos.distance(new Point2D.Double(info.getX(), info.getY())));
 
-        if(playerPos.distance(new Point2D.Double(info.getX(), info.getY())) < 0.15) {
+        if(playerPos.distance(new Point2D.Double(info.getX(), info.getY())) < 0.5) {
             stuckLimit++;
         } else {
-            stuckLimit--;
+            //stuckLimit -= 1;
             if(stuckLimit<0) stuckLimit = 0;
         }
 
 
 
-        stuck = stuckLimit>150 ? true : false;
+        stuck = stuckLimit>30 ? true : false;
 
         playerPos = new Point2D.Double(info.getX(), info.getY());
 
@@ -88,10 +89,11 @@ public class ScubaDubaAI extends AI {
 
         target = nextPearl;
 
+        clockwise = false;
 
-        boolean clockwise = false;
 
-        if(getPearlDirection() < Math.PI && !stuck){//&& !lastPearl.equals(nextPearl)) {
+        //if(getPearlDirection() < Math.PI && !stuck || ( && getPearlDirection() > Math.PI*2)){//&& !lastPearl.equals(nextPearl)) {
+        if((getPearlDirection() < Math.PI/2 || getPearlDirection() > Math.PI*1.5)) {
             clockwise = true;
         }
         if(stuck) {
@@ -179,9 +181,8 @@ public class ScubaDubaAI extends AI {
         Point nextPearl = pearls.get(0); // random pearl for start reference
 
         for(Point pearl : pearls) {
-            if(pearl.distance(new Point2D.Double(info.getX(), info.getY())) < 60) {
-                return pearl;
-            }
+            if(pearl.distance(new Point2D.Double(info.getX(), info.getY())) < 60) return pearl;
+            
             if (pearl.x < nextPearl.x) {
                 nextPearl = pearl;
             }
@@ -189,3 +190,4 @@ public class ScubaDubaAI extends AI {
         return nextPearl;
     }
 }
+
