@@ -65,17 +65,17 @@ public class ScubaDubaAI extends AI {
     @Override
     public PlayerAction update() {
 
-
-        if(playerPos.distance(new Point2D.Double(info.getX(), info.getY())) < 0.5 && stuckLimit<150) { // if diver hasn't moved much
+        if(playerPos.distance(new Point2D.Double(info.getX(), info.getY())) < 0.4 && stuckLimit<150) { // if diver hasn't moved much
             stuckLimit++; // count towards stuck
         } else {
-            stuckLimit -= 1; // calm down, everything ok
+            stuckLimit -= 1.5; // calm down, everything ok
             if(stuckLimit<0) stuckLimit = 0; // no negatives
         }
 
 
+        if(stuck && stuckLimit <=75) stuckLimit = 15;
+        stuck =  (stuckLimit>50) ? true : false; // if too few moves for too long -> stuck
 
-       stuck =  (stuckLimit>50) ? true : false; // if too few moves for too long -> stuck
 
 
         playerPos = new Point2D.Double(info.getX(), info.getY()); // save player position
@@ -86,7 +86,6 @@ public class ScubaDubaAI extends AI {
         }
 
         if(score < info.getScore()) { // if scored
-
             Point scoredPearl = pearls.get(0);
 
             for(Point pearl : pearls) { // iterate all pearls
@@ -151,7 +150,7 @@ public class ScubaDubaAI extends AI {
     }
 
     /**
-     *
+     * partly inspired by: https://stackoverflow.com/questions/24645064/how-to-check-if-path2d-intersect-with-line
      * @param target current target
      * @param clockwise winding order
      * @return returns an target free of obstacles
@@ -214,7 +213,7 @@ public class ScubaDubaAI extends AI {
             }
         }
 
-        if(nextPearl.getX() > 1320 && Math.abs(playerPos.getX() - nextPearl.getX()) > 10 && !virtualPearlUsed && playerPos.getY()<nextPearl.getY()-50) { // special cases (after dealing with them for 10 hours straight, this at least fits for the current seed)
+        if(nextPearl.getX() > 1320 && Math.abs(playerPos.getX() - nextPearl.getX()) > 10 && !virtualPearlUsed && playerPos.getY()<nextPearl.getY()-50 && !stuck) { // special cases (after dealing with them for 10 hours straight, this at least fits for the current seed)
             target = new Point2D.Double(nextPearl.getX(), info.getY());
         }
 

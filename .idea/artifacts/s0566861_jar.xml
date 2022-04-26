@@ -1,9 +1,11 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="GT1:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/GT1_jar</output-path>
+  <artifact type="jar" build-on-make="true" name="s0566861:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/s0566861_jar</output-path>
     <root id="archive" name="GT1.jar">
       <element id="module-output" name="GT1" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/ai.jar" path-in-jar="/" />
+      <element id="library" level="project" name="ai" />
+      <element id="module-source" name="GT1" />
     </root>
   </artifact>
 </component>
