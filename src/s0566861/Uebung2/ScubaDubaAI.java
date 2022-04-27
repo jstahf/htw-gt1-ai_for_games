@@ -28,8 +28,8 @@ public class ScubaDubaAI extends AI {
     private float stuckLimit = 0; // counter for stuckness measurement
     private boolean clockwise = false; // how to turn around obstacles
 
-    private Point virtualPearl; // virtual pearl for special cases
-    private boolean virtualPearlUsed; // virtualPearl already used?
+    //private Point virtualPearl; // virtual pearl for special cases
+    //private boolean virtualPearlUsed; // virtualPearl already used?
 
 
     public ScubaDubaAI(Info info) {
@@ -39,8 +39,8 @@ public class ScubaDubaAI extends AI {
 
         playerPos = new Point2D.Double(info.getX(), info.getY());
 
-        virtualPearl = new Point (1580, 450); // specific checkpoint for this seed, since pathfinding was bugged for last pearl
-        virtualPearlUsed = false;
+        // virtualPearl = new Point (1580, 450); // specific checkpoint for this seed, since pathfinding was bugged for last pearl
+        // virtualPearlUsed = false;
         //pearls.add(virtualPearl);
 
         enlistForTournament(566861);
@@ -79,10 +79,10 @@ public class ScubaDubaAI extends AI {
 
         playerPos = new Point2D.Double(info.getX(), info.getY()); // save player position
 
-        if(playerPos.distance(new Point2D.Double(1580,450)) < 10){ // check if virtual pearl is in reach
+      /*  if(playerPos.distance(new Point2D.Double(1580,450)) < 10){ // check if virtual pearl is in reach
             pearls.remove(virtualPearl); // remove
             virtualPearlUsed = true; // virtual pearl has been used up
-        }
+        }*/
 
         if(score < info.getScore()) { // if scored
 
@@ -213,7 +213,7 @@ public class ScubaDubaAI extends AI {
             }
         }
 
-        if(nextPearl.getX() > 1320 && Math.abs(playerPos.getX() - nextPearl.getX()) > 10 && !virtualPearlUsed && playerPos.getY()<nextPearl.getY()-50 && !stuck) { // special cases (after dealing with them for 10 hours straight, this at least fits for the current seed)
+        /*if(!virtualPearlUsed &&*/if(nextPearl.getX() > 1320 && Math.abs(playerPos.getX() - nextPearl.getX()) > 10 && playerPos.getY()<nextPearl.getY()-50 && !stuck) { // special cases (after dealing with them for 10 hours straight, this at least fits for the current seed)
             target = new Point2D.Double(nextPearl.getX(), info.getY());
         }
 
