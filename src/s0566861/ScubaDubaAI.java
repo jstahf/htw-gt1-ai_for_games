@@ -155,7 +155,7 @@ public class ScubaDubaAI extends AI {
     }
 
     private List<Tile> flattenPath(List<Tile> newPath) {
-        
+
     }
 
     private List<Tile> findNode(Point2D startPos, Point2D endPos) {
