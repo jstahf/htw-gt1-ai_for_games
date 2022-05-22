@@ -6,12 +6,9 @@ import lenz.htw.ai4g.ai.Info;
 import lenz.htw.ai4g.ai.PlayerAction;
 
 import java.awt.*;
-import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
-import java.awt.geom.PathIterator;
-import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.awt.geom.*;
+import java.util.*;
+import java.util.List;
 
 public class ScubaDubaAI extends AI {
 
@@ -20,16 +17,29 @@ public class ScubaDubaAI extends AI {
 
     ArrayList<Point> pearls; // holds all remaining pearls
 
+
+
+    private int sceneWidth = info.getScene().getWidth();
+    private int sceneHeight = info.getScene().getHeight();
+    private int widthFraction = 200;
+    private int heightFraction;
+    private int tileWidth;
+    private int tileHeight;
+
+    private Tile[] tiles;
+    private Boolean[] checkedTiles;
+
     private int score = 0;
 
     private Point2D playerPos; // last player position
 
+    private List<Tile> playerPath;
+
+
+
     private boolean stuck = false; // hasnt moved / is stuck
     private float stuckLimit = 0; // counter for stuckness measurement
     private boolean clockwise = false; // how to turn around obstacles
-
-    private Point virtualPearl; // virtual pearl for special cases
-    private boolean virtualPearlUsed; // virtualPearl already used?
 
 
 
@@ -37,12 +47,15 @@ public class ScubaDubaAI extends AI {
         super(info);
 
         pearls  = new ArrayList<>(Arrays.asList(info.getScene().getPearl()));
-
         playerPos = new Point2D.Double(info.getX(), info.getY());
 
-        virtualPearl = new Point (1580, 450); // specific checkpoint for this seed, since pathfinding was bugged for last pearl
-        virtualPearlUsed = false;
-        pearls.add(virtualPearl);
+
+        heightFraction = widthFraction*sceneHeight/sceneWidth;
+
+        tiles = createTiles();
+
+        playerPath = findPath();
+        System.out.println(playerPath);
 
         enlistForTournament(566861);
     }
@@ -63,7 +76,218 @@ public class ScubaDubaAI extends AI {
     }
 
     @Override
+    public void drawDebugStuff(Graphics2D gfx) {
+        gfx.setColor(Color.red);
+        gfx.drawLine((int) playerPos.getX(), (int) playerPos.getY(), (int) target.getX(), (int) target.getY());
+
+
+        for(int i = 0; i<tiles.length; i++) {
+
+            gfx.setColor(Color.red);
+            gfx.setStroke(new BasicStroke(1f));
+
+            for(Tile t : playerPath) {
+                gfx.drawOval((int) t.getMiddle().getX(), (int) t.getMiddle().getY(), 10, 10);
+            }
+            gfx.setStroke(new BasicStroke(0.2f));
+            if(tiles[i].isFreespace()){
+                gfx.setColor(Color.green);
+
+            } else {
+                gfx.setColor(Color.yellow);
+            }
+
+
+
+            gfx.draw(tiles[i].getRect());
+            gfx.drawOval((int) tiles[i].getMiddle().getX(), (int) tiles[i].getMiddle().getY(), 2, 2);
+        }
+    }
+
+    @Override
     public PlayerAction update() {
+
+        DivingAction action = oldBehaviour();
+        return action;
+    }
+
+    private Tile[] createTiles() {
+
+        Tile[] tileMap = new Tile[widthFraction*heightFraction];
+
+        tileWidth = info.getScene().getWidth()/widthFraction;
+        tileHeight = info.getScene().getHeight()/heightFraction;
+
+        Path2D[] obstacles = info.getScene().getObstacles(); // get all obstacles from scene
+
+        for(int i = 0; i<widthFraction; i++) {
+            for(int j = 0; j<heightFraction; j++) {
+
+                int index = j*widthFraction+i;
+                tileMap[index] = new Tile(new Rectangle2D.Double(i*sceneWidth/widthFraction, j*sceneHeight/heightFraction, tileWidth, tileHeight), widthFraction);
+
+                for(Path2D obstacle : obstacles) {
+
+                    if(obstacle.intersects(tileMap[index].getRect())) {
+                        tileMap[index].setFreespace(false);
+                        break;
+                    } else {
+                        tileMap[index].setFreespace(true);
+                    }
+                }
+            }
+        }
+
+        return tileMap;
+    }
+
+    private List<Tile> findPath() {
+
+        List<Tile> newPath;
+
+        Point2D start = playerPos;
+
+        newPath = findNode(start, pearls.get(0));
+
+        newPath = flattenPath(newPath);
+
+        return newPath;
+    }
+
+    private List<Tile> flattenPath(List<Tile> newPath) {
+        
+    }
+
+    private List<Tile> findNode(Point2D startPos, Point2D endPos) {
+
+
+        Tile start = tiles[(int) (startPos.getX()/tileWidth) + (int) (startPos.getY()/tileHeight) * widthFraction];
+        Tile end = tiles[(int) (endPos.getX()/tileWidth) + (int) (endPos.getY()/tileHeight) * widthFraction];
+
+        HashSet<Tile> closed = new HashSet<>();
+        Queue<Tile> open = new PriorityQueue<>(heightFraction * widthFraction, (o1, o2) -> {
+            if(o1.getEstimatedDistance() > o2.getEstimatedDistance()) return 1;
+            return 0;
+        });
+
+        start.setDistanceToStart(0.0);
+        open.add(start);
+
+        Tile current;
+
+        while (!open.isEmpty()) {
+
+            current = open.remove();
+            if (current.getMiddle().distance(end.getMiddle())<10) return reconstructPath(start, current);
+
+            for(Tile neighbour : getNeighbors(current)) {
+
+                if(closed.contains(neighbour) || open.contains(neighbour)) continue;
+
+                neighbour.setParent(current);
+
+                double distanceToStart = current.getDistanceToStart() + neighbour.getMiddle().distance(current.getMiddle());
+                double totalDistance = distanceToStart + neighbour.getMiddle().distance(end.getMiddle());
+
+                neighbour.setDistanceToStart(distanceToStart);
+                neighbour.setEstimatedDistance(totalDistance);
+
+                open.add(neighbour);
+            }
+            closed.add(current);
+        }
+
+        return null;
+    }
+
+    private List<Tile> reconstructPath(Tile start, Tile goal) {
+        // construct output list
+        LinkedList<Tile> path = new LinkedList<>();
+        Tile currNode = goal;
+        while(!currNode.equals(start)){
+            path.addFirst(currNode);
+            currNode = currNode.getParent();
+        }
+        path.addFirst(start);
+        return path;
+    }
+
+    private Set<Tile> getNeighbors(Tile current) {
+        Set<Tile> neighbours = new HashSet<>();
+
+        int tileIndex = current.getTileIndex();
+
+        if(tileIndex-1 >= 0 && tiles[tileIndex-1].isFreespace())  {
+            neighbours.add(tiles[tileIndex-1]);
+        }
+        if(tileIndex+1 < tiles.length && tiles[tileIndex+1].isFreespace()) {
+            neighbours.add(tiles[tileIndex+1]);
+        }
+        if(tileIndex-widthFraction >= 0 && tiles[tileIndex-widthFraction].isFreespace()) {
+            neighbours.add(tiles[tileIndex-widthFraction]);
+        }
+        if(tileIndex+widthFraction < tiles.length && tiles[tileIndex+widthFraction].isFreespace()) {
+            neighbours.add(tiles[tileIndex+widthFraction]);
+        }
+
+        return neighbours;
+    }
+
+    /**
+     *
+     * @return returns next pearl to aim at. usually left to right, proximity has priority
+     */
+    private Point getNextPearl() {
+
+        Point nextPearl = pearls.get(0); // random pearl for start reference
+
+        if(pearls.size()==1) return nextPearl;
+        for(Point pearl : pearls) {
+            if(pearl.distance(new Point2D.Double(info.getX(), info.getY())) < 80) return pearl;
+
+            if (pearl.x < nextPearl.x) {
+                nextPearl = pearl;
+            }
+        }
+        return nextPearl;
+    }
+
+    /**
+     *
+     * @return returns current player direction as radians
+     */
+    private float getTargetDirection() {
+
+        double xVec = target.getX() - info.getX();
+        double yVec = target.getY() - info.getY();
+
+        double direct =  -Math.atan2(yVec, xVec);
+
+        if(direct<0) direct += 2*Math.PI;
+
+        return (float) direct;
+    }
+
+    /**
+     *
+     * @return returns direction to next pearl in radians
+     */
+    private float getPearlDirection() {
+        double xVec = nextPearl.getX() - info.getX();
+        double yVec = nextPearl.getY() - info.getY();
+
+        double direct =  -Math.atan2(yVec, xVec);
+
+        if(direct<0) direct += 2*Math.PI;
+
+        return (float) direct;
+    }
+
+    /**
+     * Old behaviour from Tournament 1
+     * @return Divingaction based on old behaviour
+     */
+    private DivingAction oldBehaviour() {
 
         if(playerPos.distance(new Point2D.Double(info.getX(), info.getY())) < 0.4 && stuckLimit<150) { // if diver hasn't moved much
             stuckLimit++; // count towards stuck
@@ -80,10 +304,6 @@ public class ScubaDubaAI extends AI {
 
         playerPos = new Point2D.Double(info.getX(), info.getY()); // save player position
 
-        if(playerPos.distance(new Point2D.Double(1580,450)) < 10){ // check if virtual pearl is in reach
-            pearls.remove(virtualPearl); // remove
-            virtualPearlUsed = true; // virtual pearl has been used up
-        }
 
         if(score < info.getScore()) { // if scored
             Point scoredPearl = pearls.get(0);
@@ -116,37 +336,6 @@ public class ScubaDubaAI extends AI {
         target = avoidObstacles(target, clockwise); // check for obstacles. if there is one -> target a point around it
 
         return new DivingAction(info.getMaxAcceleration(), getTargetDirection()); // dive
-    }
-
-    /**
-     *
-     * @return returns current player direction as radians
-     */
-    private float getTargetDirection() {
-
-        double xVec = target.getX() - info.getX();
-        double yVec = target.getY() - info.getY();
-
-        double direct =  -Math.atan2(yVec, xVec);
-
-        if(direct<0) direct += 2*Math.PI;
-
-        return (float) direct;
-    }
-
-    /**
-     *
-     * @return returns direction to next pearl in radians
-     */
-    private float getPearlDirection() {
-        double xVec = nextPearl.getX() - info.getX();
-        double yVec = nextPearl.getY() - info.getY();
-
-        double direct =  -Math.atan2(yVec, xVec);
-
-        if(direct<0) direct += 2*Math.PI;
-
-        return (float) direct;
     }
 
     /**
@@ -213,30 +402,7 @@ public class ScubaDubaAI extends AI {
             }
         }
 
-        if(nextPearl.getX() > 1320 && Math.abs(playerPos.getX() - nextPearl.getX()) > 10 && !virtualPearlUsed && playerPos.getY()<nextPearl.getY()-50 && !stuck) { // special cases (after dealing with them for 10 hours straight, this at least fits for the current seed)
-            target = new Point2D.Double(nextPearl.getX(), info.getY());
-        }
-
         return target; // return new, obstacle-free target point
-    }
-
-    /**
-     *
-     * @return returns next pearl to aim at. usually left to right, proximity has priority
-     */
-    private Point getNextPearl() {
-
-        Point nextPearl = pearls.get(0); // random pearl for start reference
-
-        if(pearls.size()==1) return nextPearl;
-        for(Point pearl : pearls) {
-            if(pearl.distance(new Point2D.Double(info.getX(), info.getY())) < 80) return pearl;
-
-            if (pearl.x < nextPearl.x) {
-                nextPearl = pearl;
-            }
-        }
-        return nextPearl;
     }
 }
 

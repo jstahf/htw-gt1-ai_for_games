@@ -4,7 +4,6 @@
     <root id="archive" name="GT1.jar">
       <element id="module-output" name="GT1" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/ai.jar" path-in-jar="/" />
-      <element id="library" level="project" name="ai" />
       <element id="module-source" name="GT1" />
     </root>
   </artifact>
