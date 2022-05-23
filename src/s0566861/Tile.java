@@ -1,4 +1,4 @@
-package s0566861.Uebung2;
+package s0566861;
 
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;

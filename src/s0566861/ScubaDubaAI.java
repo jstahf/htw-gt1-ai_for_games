@@ -1,4 +1,4 @@
-package s0566861.Uebung2;
+package s0566861;
 
 import lenz.htw.ai4g.ai.AI;
 import lenz.htw.ai4g.ai.DivingAction;
@@ -66,7 +66,7 @@ public class ScubaDubaAI extends AI {
     public Color getSecondaryColor() {
         return Color.CYAN;
     }
-
+/*
     @Override
     public void drawDebugStuff(Graphics2D gfx) {
         gfx.setColor(Color.red);
@@ -79,7 +79,7 @@ public class ScubaDubaAI extends AI {
                 gfx.drawRect((int) t.getMiddle().getX(), (int) t.getMiddle().getY(), tileWidth, tileHeight);
             }
         }
-    }
+    }*/
 
 
     @Override
@@ -282,35 +282,42 @@ public class ScubaDubaAI extends AI {
     }
 
     /**
-     * @return returns next pearl to aim at. usually left to right, proximity has priority
+     * @return returns next pearl to aim at. usually left to right, close proximity has priority
      */
     private Point getNextPearl() {
+
+        int meanPearlX = 0;
+        int meanPearlY = 0;
+
+        for(Point2D pearl : pearls) {
+            meanPearlX += pearl.getX()/pearls.size();
+            meanPearlY += pearl.getY()/pearls.size();
+        }
+
+        boolean leftFirst = (meanPearlX>playerPos.getX()) ? true : false;
 
         Point nextPearl = pearls.get(0); // random pearl for start reference
 
         if (pearls.size() == 1) return nextPearl;
         for (Point pearl : pearls) {
-            if (pearl.distance(new Point2D.Double(info.getX(), info.getY())) < 80) return pearl;
+            boolean prio = false;
+            if(Math.abs(pearl.getY()-meanPearlY)>300) prio = true;
 
-            if (pearl.x < nextPearl.x) {
-                nextPearl = pearl;
+            if (pearl.distance(playerPos) < 50) return pearl;
+
+            if(prio && pearl.distance(playerPos)<400) return pearl;
+
+            if(leftFirst) {
+                if (pearl.x < nextPearl.x) {
+                    nextPearl = pearl;
+                }
+            } else {
+                if (pearl.x > nextPearl.x) {
+                    nextPearl = pearl;
+                }
             }
         }
         return nextPearl;
-    }
-
-    /**
-     * @return returns direction to next pearl in radians
-     */
-    private float getPearlDirection() {
-        double xVec = nextPearl.getX() - info.getX();
-        double yVec = nextPearl.getY() - info.getY();
-
-        double direct = -Math.atan2(yVec, xVec);
-
-        if (direct < 0) direct += 2 * Math.PI;
-
-        return (float) direct;
     }
 
     private void removePearl() {
