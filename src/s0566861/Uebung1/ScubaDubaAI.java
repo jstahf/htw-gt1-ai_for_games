@@ -1,4 +1,4 @@
-package Uebung1;
+package s0566861.Uebung1;
 
 import lenz.htw.ai4g.ai.AI;
 import lenz.htw.ai4g.ai.DivingAction;
