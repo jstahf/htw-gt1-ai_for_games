@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/src/s0575695" />
       <excludeFolder url="file://$MODULE_DIR$/Uebung1/Uebung1" />
+      <excludeFolder url="file://$MODULE_DIR$/src/META-INF" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
