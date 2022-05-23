@@ -19,13 +19,12 @@ public class ScubaDubaAI extends AI {
 
     private int sceneWidth = info.getScene().getWidth();
     private int sceneHeight = info.getScene().getHeight();
-    private int widthFraction = 200;
+    private int widthFraction = 400;
     private int heightFraction;
     private int tileWidth;
     private int tileHeight;
 
     private Tile[] tiles;
-    private Boolean[] checkedTiles;
 
     private int score = 0;
 
@@ -33,8 +32,6 @@ public class ScubaDubaAI extends AI {
 
     private List<Tile> playerPath;
 
-
-    private int drawCounter = 0;
 
     public ScubaDubaAI(Info info) {
         super(info);
@@ -57,7 +54,7 @@ public class ScubaDubaAI extends AI {
 
     @Override
     public String getName() {
-        return "ScubaDuba2.0";
+        return "ScubaDuba";
     }
 
     @Override
@@ -75,27 +72,13 @@ public class ScubaDubaAI extends AI {
         gfx.setColor(Color.red);
         gfx.drawLine((int) playerPos.getX(), (int) playerPos.getY(), (int) target.getX(), (int) target.getY());
 
-        if (drawCounter > -1) {
-            gfx.setColor(Color.red);
-            gfx.setStroke(new BasicStroke(1f));
+        gfx.setStroke(new BasicStroke(1f));
 
+        if(playerPath!=null) {
             for (Tile t : playerPath) {
                 gfx.drawRect((int) t.getMiddle().getX(), (int) t.getMiddle().getY(), tileWidth, tileHeight);
-            }/*
-            for(int i = 0; i<tiles.length; i++) {
-                gfx.setStroke(new BasicStroke(0.2f));
-                if (tiles[i].isFreespace()) {
-                    gfx.setColor(Color.green);
-
-                } else {
-                    gfx.setColor(Color.yellow);
-                }
-                gfx.draw(tiles[i].getRect());
-                gfx.drawOval((int) tiles[i].getMiddle().getX(), (int) tiles[i].getMiddle().getY(), 2, 2);
-            }*/
-            drawCounter = 0;
+            }
         }
-        drawCounter++;
     }
 
 
@@ -122,7 +105,10 @@ public class ScubaDubaAI extends AI {
         return action;
     }
 
-
+    /**
+     *  Checks for obstacles and returns a new diving call
+     * @return DivingAction with max speed and direction to current target
+     */
     private DivingAction dive() {
 
         target = avoidObstacles(target, new ArrayList<>(playerPath));
@@ -130,6 +116,13 @@ public class ScubaDubaAI extends AI {
         return new DivingAction(info.getMaxAcceleration(), getTargetDirection()); // dive;
     }
 
+    /**
+     * Checks if obstacles are in the way. If so the furthest element of path gets selected as new target.
+     *
+     * @param target current target
+     * @param path current path as Tile ArrayList
+     * @return returns an target free of obstacles
+     */
     private Point2D avoidObstacles(Point2D target, ArrayList<Tile> path) {
         Line2D lineToTarget = new Line2D.Double(info.getX(), info.getY(), target.getX(), target.getY()); // line to target
 
@@ -145,14 +138,12 @@ public class ScubaDubaAI extends AI {
         return  target;
     }
 
+
     /**
-     * partly inspired by: https://stackoverflow.com/questions/24645064/how-to-check-if-path2d-intersect-with-line
-     *
-     * @param target current target
-     * @return returns an target free of obstacles
+     * - Placeholder method -
+     * @param newTarget Target as Graphic Point
+     * @return ArrayList<Tile> with index 0 as start and list.length-1 as goal
      */
-
-
     private List<Tile> findPath(Point2D newTarget) {
 
         List<Tile> newPath;
@@ -164,14 +155,12 @@ public class ScubaDubaAI extends AI {
         return newPath;
     }
 
-    private List<Tile> flattenPath(List<Tile> newPath) {
-        for (int i = 0; i < newPath.size(); i++) {
-
-        }
-
-        return newPath;
-    }
-
+    /**
+     * Basic A* Algorithm
+     * @param startPos Graphic Point as Start
+     * @param endPos Graphic Poinnt as goal
+     * @return ArrayList<Tile> with index 0 as start and list.length-1 as goal
+     */
     private List<Tile> findNode(Point2D startPos, Point2D endPos) {
 
 
@@ -214,6 +203,12 @@ public class ScubaDubaAI extends AI {
         return null;
     }
 
+    /**
+     *  Recursively reconstructs the path from goal to start and returns it as ArrayList<Tile>
+     * @param start starting Tile
+     * @param goal finish Tile
+     * @return ArrayList<Tile> with index 0 as start and list.length-1 as goal
+     */
     private List<Tile> reconstructPath(Tile start, Tile goal) {
         // construct output list
         List<Tile> path = new ArrayList<>();
@@ -226,6 +221,11 @@ public class ScubaDubaAI extends AI {
         return path;
     }
 
+    /**
+     *  Returns all 4 neighbours with distance = 1 tile
+     * @param current current tile
+     * @return neighbours as HashSet<Tile>
+     */
     private Set<Tile> getNeighbors(Tile current) {
         Set<Tile> neighbours = new HashSet<>();
 
@@ -247,6 +247,10 @@ public class ScubaDubaAI extends AI {
         return neighbours;
     }
 
+    /** creates a 2D tilemap stored in a 1D-Tile Array. Index from upper left to bottom right corner.
+     *
+     * @return Tiles in order: x+widthFraction*y
+     */
     private Tile[] createTiles() {
 
         Tile[] tileMap = new Tile[widthFraction * heightFraction];
