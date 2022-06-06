@@ -16,11 +16,12 @@ public class ScubaDubaAI extends AI {
 
     private Point2D target; // current target
     private Point2D nextPearl; // next pearl targeted
+    private final boolean leftFirst;
 
-    private int sceneWidth = info.getScene().getWidth();
-    private int sceneHeight = info.getScene().getHeight();
-    private int widthFraction = 400;
-    private int heightFraction;
+    private final int sceneWidth = info.getScene().getWidth();
+    private final int sceneHeight = info.getScene().getHeight();
+    private final int widthFraction = 400;
+    private final int heightFraction;
     private int tileWidth;
     private int tileHeight;
 
@@ -31,6 +32,12 @@ public class ScubaDubaAI extends AI {
     private Point2D playerPos; // last player position
 
     private List<Tile> playerPath;
+
+    private int frameCount = 0;
+    private boolean aboutToBreath = false;
+    private boolean breathed = false;
+    private boolean abovePearl = true;
+
 
 
     public ScubaDubaAI(Info info) {
@@ -44,10 +51,19 @@ public class ScubaDubaAI extends AI {
 
         this.tiles = createTiles();
 
+        int meanPearlX = 0;
+
+        for(Point2D pearl : pearls) {
+            meanPearlX += pearl.getX()/pearls.size();
+        }
+
+        this.leftFirst = (meanPearlX>playerPos.getX()) ? true : false;
+
         this.nextPearl = getNextPearl(); // get next target pearl
         this.target = this.nextPearl;
 
-        this.playerPath = findPath(target);
+        this.playerPath = findPath(playerPos, target);
+        checkOxygen(playerPath);
 
         enlistForTournament(566861);
     }
@@ -66,7 +82,7 @@ public class ScubaDubaAI extends AI {
     public Color getSecondaryColor() {
         return Color.CYAN;
     }
-/*
+
     @Override
     public void drawDebugStuff(Graphics2D gfx) {
         gfx.setColor(Color.red);
@@ -79,7 +95,7 @@ public class ScubaDubaAI extends AI {
                 gfx.drawRect((int) t.getMiddle().getX(), (int) t.getMiddle().getY(), tileWidth, tileHeight);
             }
         }
-    }*/
+    }
 
 
     @Override
@@ -87,22 +103,100 @@ public class ScubaDubaAI extends AI {
 
         playerPos = new Point2D.Double(info.getX(), info.getY()); // save player position
 
-        if (score < info.getScore()) { // if scored
-            removePearl();
-            score++; // increase score
+        if(aboutToBreath && info.getAir() == info.getMaxAir()) {
+            breathed = true;
+            System.out.println("breathed");
+            aboutToBreath = false;
+        }
+
+        if (score < info.getScore() || breathed) { // if scored
+
+            if(!breathed) {
+                removePearl();
+                score++; // increase score
+            }
             for(Tile t : playerPath) {
                 t.wipeData();
             }
             this.nextPearl = getNextPearl(); // get next target pearl
-            playerPath = findPath(getNextPearl());
+            this.playerPath = findPath(playerPos, nextPearl);
+            breathed = false;
+            checkOxygen(playerPath);
         }
 
-        this.nextPearl = getNextPearl(); // get next target pearl
+        if(!abovePearl && Math.abs(nextPearl.getX()-playerPos.getX()) <10) {
+            abovePearl = true;
+            this.nextPearl = getNextPearl(); // get next target pearl
+            this.playerPath = findPath(playerPos, nextPearl);
+        }
+
+/*
+        if(frameCount>20) {
+            //System.out.println(info.getAir());
+            frameCount = 0;
+        }
+        frameCount++;*/
+
+        //this.nextPearl = getNextPearl(); // get next target pearl
         this.target = nextPearl;
 
         DivingAction action = dive();
 
         return action;
+    }
+
+    private void checkOxygen(List<Tile> pp) {
+        Point2D breathingPoint = new Point2D.Double(nextPearl.getX(), 45);
+
+
+
+        int pathLength = pp.size() * tileHeight + findPath(this.nextPearl, breathingPoint).size()*tileHeight;
+
+        if(pearls.size()<5) {
+            pathLength = getAllDistance();
+        }
+
+        System.out.println("PathL: " + pathLength + " Duration: " + pathLength / info.getMaxVelocity() + " Air: " + info.getAir());
+
+        if(pathLength / info.getMaxVelocity() > info.getAir() && info.getAir() != info.getMaxAir()) {
+
+            this.nextPearl = new Point2D.Double(playerPos.getX(), 45);
+            this.playerPath = findPath(playerPos, nextPearl);
+            System.out.println("going up");
+            aboutToBreath = true;
+
+        } else if (info.getAir() == info.getMaxAir()) {
+
+            this.nextPearl = new Point2D.Double(nextPearl.getX(), 45);
+            this.playerPath = findPath(playerPos, nextPearl);
+            System.out.println("going above");
+            abovePearl = false;
+        }
+    }
+
+    private int getAllDistance() {
+        ArrayList<Point> remainPearls = (ArrayList<Point>) pearls.clone();
+
+        remainPearls.sort(new Comparator<Point>() {
+            @Override
+            public int compare(Point o1, Point o2) {
+                if(leftFirst){
+                    if(o1.getX() < o2.getX()) return 0;
+                } else {
+                    if(o1.getX() > o2.getX()) return 0;
+                }
+                return 1;
+
+            }
+        });
+
+        int allPath = 0;
+
+        for(int i = 1; i<remainPearls.size(); i++) {
+            allPath += findPath(remainPearls.get(i-1), remainPearls.get(i)).size()*tileHeight;
+        }
+
+        return allPath;
     }
 
     /**
@@ -113,7 +207,7 @@ public class ScubaDubaAI extends AI {
 
         target = avoidObstacles(target, new ArrayList<>(playerPath));
 
-        return new DivingAction(info.getMaxAcceleration(), getTargetDirection()); // dive;
+        return new DivingAction(info.getMaxAcceleration(), getTargetDirection(target)); // dive;
     }
 
     /**
@@ -144,11 +238,9 @@ public class ScubaDubaAI extends AI {
      * @param newTarget Target as Graphic Point
      * @return ArrayList<Tile> with index 0 as start and list.length-1 as goal
      */
-    private List<Tile> findPath(Point2D newTarget) {
+    private List<Tile> findPath(Point2D start, Point2D newTarget) {
 
         List<Tile> newPath;
-
-        Point2D start = playerPos;
 
         newPath = findNode(start, newTarget);
 
@@ -158,7 +250,7 @@ public class ScubaDubaAI extends AI {
     /**
      * Basic A* Algorithm
      * @param startPos Graphic Point as Start
-     * @param endPos Graphic Poinnt as goal
+     * @param endPos Graphic Point as goal
      * @return ArrayList<Tile> with index 0 as start and list.length-1 as goal
      */
     private List<Tile> findNode(Point2D startPos, Point2D endPos) {
@@ -200,7 +292,10 @@ public class ScubaDubaAI extends AI {
             closed.add(current);
         }
 
-        return null;
+        // UNREACHABLE! -> Switch to next Pearl instead
+        pearls.remove(nextPearl);
+        nextPearl = getNextPearl();
+        return findNode(startPos, nextPearl);
     }
 
     /**
@@ -286,26 +381,12 @@ public class ScubaDubaAI extends AI {
      */
     private Point getNextPearl() {
 
-        int meanPearlX = 0;
-        int meanPearlY = 0;
-
-        for(Point2D pearl : pearls) {
-            meanPearlX += pearl.getX()/pearls.size();
-            meanPearlY += pearl.getY()/pearls.size();
-        }
-
-        boolean leftFirst = (meanPearlX>playerPos.getX()) ? true : false;
-
         Point nextPearl = pearls.get(0); // random pearl for start reference
 
         if (pearls.size() == 1) return nextPearl;
         for (Point pearl : pearls) {
-            boolean prio = false;
-            if(Math.abs(pearl.getY()-meanPearlY)>300) prio = true;
 
             if (pearl.distance(playerPos) < 50) return pearl;
-
-            if(prio && pearl.distance(playerPos)<400) return pearl;
 
             if(leftFirst) {
                 if (pearl.x < nextPearl.x) {
@@ -335,7 +416,7 @@ public class ScubaDubaAI extends AI {
     /**
      * @return returns current player direction as radians
      */
-    private float getTargetDirection() {
+    private float getTargetDirection(Point2D target) {
 
         double xVec = target.getX() - info.getX();
         double yVec = target.getY() - info.getY();
