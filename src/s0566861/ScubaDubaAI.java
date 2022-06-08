@@ -13,33 +13,32 @@ import java.util.List;
 public class ScubaDubaAI extends AI {
 
     private ArrayList<Point2D> pearls; // holds all remaining pearls
-    private ArrayList<Point2D> latePearls;
+    private ArrayList<Point2D> latePearls; // holds possibly missed or unreachable pearls
 
     private Point2D target; // current target
     private Point2D nextPearl; // next pearl targeted
-    private boolean leftFirst;
+    private boolean leftFirst; // determines if collecting starts left or right
 
     private final int sceneWidth = info.getScene().getWidth();
     private final int sceneHeight = info.getScene().getHeight();
-    private final int widthFraction = 400;
-    private final int heightFraction;
+
+    private Tile[] tiles; // tiles for pathfinding
+
+    private final int widthFraction = 400; // how many tiles across screenwidth
+    private final int heightFraction; // how many tiles across screenheight
     private int tileWidth;
     private int tileHeight;
-
-    private Tile[] tiles;
 
     private int score = 0;
 
     private Point2D playerPos; // last player position
 
-    private List<Tile> playerPath;
+    private List<Tile> playerPath; // curent path along tilegrid
 
-    private int frameCount = 0;
-    private boolean aboutToBreath = false;
-    private boolean breathed = false;
-    private boolean abovePearl = true;
-
-
+    private int frameCount = 0; // counter for breathing checks
+    private boolean aboutToBreath = false; // heading up in order to breath
+    private boolean breathed = false; // has just breathed
+    private boolean abovePearl = true; // has reached minimum distance from surface to next pearl
 
     public ScubaDubaAI(Info info) {
         super(info);
@@ -163,7 +162,11 @@ public class ScubaDubaAI extends AI {
     }
 
 
-
+    /**
+     * Checks if Oxygen is enough to either reach the next target AND the surface afterwards OR to reach all pearls with
+     * remaining amount of oxygen
+     * @param pp current playerpath to next objective
+     */
     private void checkOxygen(List<Tile> pp) {
 
         Point2D breathingPoint = new Point2D.Double(nextPearl.getX(), 0);
@@ -433,6 +436,11 @@ public class ScubaDubaAI extends AI {
         return nextPearl;
     }
 
+
+    /**
+     * calculates distance for all remaining pearls. Order depends on leftfirst true or not
+     * @return returns distance measured in pixels for all remaining pearls
+     */
     private int getAllDistance() {
         ArrayList<Point2D> remainPearls = (ArrayList<Point2D>) pearls.clone();
         remainPearls.addAll(latePearls);
@@ -461,6 +469,10 @@ public class ScubaDubaAI extends AI {
         return allPath;
     }
 
+    /**
+     * pre-calculates distance to next pearl
+     * @return distance to next pearl measured in pixels
+     */
     private int getNextPDistance() {
 
         Point2D closestPearl = pearls.get(0);
@@ -473,6 +485,9 @@ public class ScubaDubaAI extends AI {
         return nextPath;
     }
 
+    /**
+     * removes pearl in closest proximity
+     */
     private void removePearl() {
         Point2D scoredPearl = pearls.get(0);
         ArrayList<Point2D> allpearls = (ArrayList<Point2D>) pearls.clone();
