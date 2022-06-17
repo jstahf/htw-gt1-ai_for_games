@@ -3,11 +3,15 @@ package s0566861;
 import lenz.htw.ai4g.ai.*;
 
 import java.awt.*;
-import java.awt.geom.*;
-import java.util.*;
+import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.util.List;
+import java.util.Queue;
+import java.util.*;
 
-public class ScubaDubaAI extends AI {
+public class ScubaDubaAI2 extends AI {
 
     private ArrayList<Point2D> pearls; // holds all remaining pearls
     private ArrayList<Point2D> latePearls; // holds possibly missed or unreachable pearls
@@ -44,7 +48,7 @@ public class ScubaDubaAI extends AI {
     private boolean breathed = false; // has just breathed
     private boolean abovePearl = true; // has reached minimum distance from surface to next pearl
 
-    public ScubaDubaAI(Info info) {
+    public ScubaDubaAI2(Info info) {
         super(info);
 
 
@@ -81,7 +85,7 @@ public class ScubaDubaAI extends AI {
 
     @Override
     public String getName() {
-        return "ScubaDuba";
+        return "ScubaDuba2";
     }
 
     @Override
@@ -244,13 +248,13 @@ public class ScubaDubaAI extends AI {
         int nextDistance = getNextPDistance();
         int allDistance = getAllDistance();
 
-        if(nextDistance / info.getMaxVelocity() < info.getAir()-50) return;
-        if(allDistance / info.getMaxVelocity() < info.getAir()-pearls.size()-50) {
+        if(nextDistance / info.getMaxVelocity() < info.getAir()-100) return;
+        if(allDistance / info.getMaxVelocity() < info.getAir()-pearls.size()-100) {
             return;
         }
 
 
-        if(pathLength / info.getMaxVelocity() > info.getAir()-50) {
+        if(pathLength / info.getMaxVelocity() > info.getAir()-100) {
 
             if (info.getAir() != info.getMaxAir()) {
 
