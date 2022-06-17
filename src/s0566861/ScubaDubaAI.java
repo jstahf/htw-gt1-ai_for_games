@@ -1,9 +1,6 @@
 package s0566861;
 
-import lenz.htw.ai4g.ai.AI;
-import lenz.htw.ai4g.ai.DivingAction;
-import lenz.htw.ai4g.ai.Info;
-import lenz.htw.ai4g.ai.PlayerAction;
+import lenz.htw.ai4g.ai.*;
 
 import java.awt.*;
 import java.awt.geom.*;
@@ -14,6 +11,7 @@ public class ScubaDubaAI extends AI {
 
     private ArrayList<Point2D> pearls; // holds all remaining pearls
     private ArrayList<Point2D> latePearls; // holds possibly missed or unreachable pearls
+    private ArrayList<Point2D> trash; // holds all bottles and tin cans
 
     private Point2D target; // current target
     private Point2D nextPearl; // next pearl targeted
@@ -29,14 +27,20 @@ public class ScubaDubaAI extends AI {
     private int tileWidth;
     private int tileHeight;
 
+    private final Point2D shopPos = new Point2D.Double(info.getScene().getShopPosition(), 0);
+
     private int score = 0;
+    private int money = 0;
 
     private Point2D playerPos; // last player position
 
     private List<Tile> playerPath; // curent path along tilegrid
 
     private int frameCount = 0; // counter for breathing checks
+
+    private int itemsBought = 0;
     private boolean aboutToBreath = false; // heading up in order to breath
+    private boolean aboutToShop = false;
     private boolean breathed = false; // has just breathed
     private boolean abovePearl = true; // has reached minimum distance from surface to next pearl
 
@@ -54,6 +58,8 @@ public class ScubaDubaAI extends AI {
         this.pearls = new ArrayList<>(Arrays.asList(info.getScene().getPearl()));
         this.latePearls = new ArrayList<>();
 
+        this.trash = new ArrayList<>(Arrays.asList(info.getScene().getRecyclingProducts()));
+
        // scanPearls();
 
         int meanPearlX = 0;
@@ -62,9 +68,9 @@ public class ScubaDubaAI extends AI {
             meanPearlX += pearl.getX()/pearls.size();
         }
 
-        this.leftFirst = (meanPearlX>playerPos.getX()) ? true : false;
+        this.leftFirst = (meanPearlX>shopPos.getX()) ? true : false;
 
-        this.nextPearl = getNextPearl(); // get next target pearl
+        this.nextPearl = getNextTrash(); // get next target pearl
         this.target = this.nextPearl;
 
         this.playerPath = findPath(playerPos, target);
@@ -72,8 +78,6 @@ public class ScubaDubaAI extends AI {
 
         enlistForTournament(566861);
     }
-
-
 
     @Override
     public String getName() {
@@ -89,7 +93,7 @@ public class ScubaDubaAI extends AI {
     public Color getSecondaryColor() {
         return Color.CYAN;
     }
-/*
+
     @Override
     public void drawDebugStuff(Graphics2D gfx) {
         gfx.setColor(Color.red);
@@ -102,45 +106,12 @@ public class ScubaDubaAI extends AI {
                 gfx.drawRect((int) t.getMiddle().getX(), (int) t.getMiddle().getY(), tileWidth, tileHeight);
             }
         }
-    }*/
+    }
 
 
     @Override
     public PlayerAction update() {
-
         playerPos = new Point2D.Double(info.getX(), info.getY()); // save player position
-
-        if(aboutToBreath && info.getAir() == info.getMaxAir()) {
-            breathed = true;
-            System.out.println("breathed");
-            aboutToBreath = false;
-        }
-        if(!abovePearl && frameCount > 50) {
-            breathed = true;
-            abovePearl = true;
-        }
-
-        if (score < info.getScore() || breathed) { // if scored
-
-            if(!breathed) {
-                removePearl();
-                score++; // increase score
-            }
-            for(Tile t : playerPath) {
-                t.wipeData();
-            }
-            this.nextPearl = getNextPearl(); // get next target pearl
-            this.playerPath = findPath(playerPos, nextPearl);
-            breathed = false;
-            checkOxygen(playerPath);
-        }
-
-
-         if(!abovePearl && Math.abs(nextPearl.getX()-playerPos.getX()) <10) {
-            abovePearl = true;
-            this.nextPearl = getNextPearl(); // get next target pearl
-            this.playerPath = findPath(playerPos, nextPearl);
-        }
 
         if(frameCount>50) {
             /*Point2D newPearl = checkProximity();
@@ -153,13 +124,104 @@ public class ScubaDubaAI extends AI {
         }
         frameCount++;
 
-        //this.nextPearl = getNextPearl(); // get next target pearl
-        this.target = nextPearl;
+        if(aboutToBreath && info.getAir() == info.getMaxAir()) {
+            breathed = true;
+            aboutToBreath = false;
+        }
 
-        DivingAction action = dive();
+        if(!abovePearl && frameCount > 50) {
+            breathed = true;
+            abovePearl = true;
+        }
 
-        return action;
+        if(itemsBought<2) {
+            if (money < info.getMoney() || breathed) { // if scored
+                if(!breathed) {
+                    removeTrash();
+                    money++; // increase score
+                }
+                for(Tile t : playerPath) {
+                    t.wipeData();
+                }
+                this.nextPearl = getNextTrash(); // get next target pearl
+                this.playerPath = findPath(playerPos, nextPearl);
+                breathed = false;
+                checkOxygen(playerPath);
+            }
+
+            if((money>=4 || (itemsBought == 1 && money>=2)) && !aboutToShop) {
+                nextPearl = shopPos;
+                this.playerPath = findPath(playerPos, nextPearl);
+                checkOxygen(playerPath);
+                aboutToShop = true;
+            }
+
+            if(aboutToShop && playerPos.distance(shopPos)<20) {
+                aboutToShop = false;
+                itemsBought ++;
+                System.out.println(itemsBought);
+                if(itemsBought==2){
+                    nextPearl = getNextPearl();
+                    playerPath = findPath(playerPos, nextPearl);
+                    checkOxygen(playerPath);
+                }
+                switch (itemsBought) {
+                    case 1: return new ShoppingAction(ShoppingItem.BALLOON_SET);
+                    case 2: return new ShoppingAction(ShoppingItem.STREAMLINED_WIG);
+                    case 3: return new ShoppingAction(ShoppingItem.MOTORIZED_FLIPPERS);
+                    case 4: return new ShoppingAction(ShoppingItem.CORNER_CUTTER);
+                }
+            }
+
+            if(!abovePearl && Math.abs(nextPearl.getX()-playerPos.getX()) <10) {
+                abovePearl = true;
+                this.nextPearl = getNextTrash(); // get next target pearl
+                this.playerPath = findPath(playerPos, nextPearl);
+            }
+
+
+
+            //this.nextPearl = getNextPearl(); // get next target pearl
+            this.target = nextPearl;
+
+            DivingAction action = dive();
+
+            return action;
+
+        } else {
+
+            if (score < info.getScore() || breathed) { // if scored
+
+                if (!breathed) {
+                    removePearl();
+                    score++; // increase score
+                }
+                for (Tile t : playerPath) {
+                    t.wipeData();
+                }
+                this.nextPearl = getNextPearl(); // get next target pearl
+                this.playerPath = findPath(playerPos, nextPearl);
+                breathed = false;
+                checkOxygen(playerPath);
+            }
+
+
+            if (!abovePearl && Math.abs(nextPearl.getX() - playerPos.getX()) < 10) {
+                abovePearl = true;
+                this.nextPearl = getNextPearl(); // get next target pearl
+                this.playerPath = findPath(playerPos, nextPearl);
+            }
+
+
+            //this.nextPearl = getNextPearl(); // get next target pearl
+            this.target = nextPearl;
+
+            DivingAction action = dive();
+
+            return action;
+        }
     }
+
 
 
     /**
@@ -184,11 +246,9 @@ public class ScubaDubaAI extends AI {
 
         if(nextDistance / info.getMaxVelocity() < info.getAir()-100) return;
         if(allDistance / info.getMaxVelocity() < info.getAir()-pearls.size()-100) {
-            System.out.println(" Duration: " +allDistance / info.getMaxVelocity() + " Air: " + info.getAir());
             return;
         }
 
-        System.out.println("PathL: " + pathLength + " Duration: " + pathLength / info.getMaxVelocity() + " Air: " + info.getAir());
 
         if(pathLength / info.getMaxVelocity() > info.getAir()-100) {
 
@@ -199,7 +259,6 @@ public class ScubaDubaAI extends AI {
 
                 this.nextPearl = (float) info.getAir() / (float) info.getMaxAir() > 0.6 ? new Point2D.Double((above.getX()+nextPearl.getX())/2, above.getY()) : above;
 
-                System.out.println("going up");
                 aboutToBreath = true;
 
             } else if (info.getAir() == info.getMaxAir()) {
@@ -209,7 +268,6 @@ public class ScubaDubaAI extends AI {
 
                 this.nextPearl = above;
 
-                System.out.println("going above");
                 abovePearl = false;
             }
             this.playerPath = findPath(playerPos, nextPearl);
@@ -436,6 +494,17 @@ public class ScubaDubaAI extends AI {
         return nextPearl;
     }
 
+    private Point2D getNextTrash() {
+        if(aboutToShop) return shopPos;
+        Point2D nextTrash = trash.get(0);
+        Point2D shop = new Point2D.Double(info.getScene().getShopPosition(), 0);
+
+        for(Point2D item: trash) {
+            if(item.distance(shop) < nextTrash.distance(shop)) nextTrash = item;
+        }
+        return nextTrash;
+    }
+
 
     /**
      * calculates distance for all remaining pearls. Order depends on leftfirst true or not
@@ -493,7 +562,7 @@ public class ScubaDubaAI extends AI {
         ArrayList<Point2D> allpearls = (ArrayList<Point2D>) pearls.clone();
         allpearls.addAll(latePearls);
         for (Point2D pearl : allpearls) { // iterate all pearls
-            if (pearl.distance(new Point2D.Double(info.getX(), info.getY())) < scoredPearl.distance(new Point2D.Double(info.getX(), info.getY()))) { // if distance is smaller than previous pearl
+            if (pearl.distance(new Point2D.Double(info.getX(), info.getY())) < scoredPearl.distance(playerPos)) { // if distance is smaller than previous pearl
                 scoredPearl = pearl; // take this pearl
             }
         }
@@ -501,6 +570,20 @@ public class ScubaDubaAI extends AI {
         pearls.remove(scoredPearl); // remove it
         latePearls.remove(scoredPearl);
     }
+
+
+    private void removeTrash() {
+        Point2D scoredTrash = trash.get(0);
+
+        for (Point2D item : trash) { // iterate all pearls
+            if (item.distance(new Point2D.Double(info.getX(), info.getY())) < scoredTrash.distance(playerPos)) { // if distance is smaller than previous pearl
+                scoredTrash = item; // take this pearl
+            }
+        }
+
+        trash.remove(scoredTrash); // remove it
+    }
+
 
     /**
      * @return returns current player direction as radians
