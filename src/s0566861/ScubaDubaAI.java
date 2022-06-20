@@ -93,7 +93,7 @@ public class ScubaDubaAI extends AI {
     public Color getSecondaryColor() {
         return Color.CYAN;
     }
-
+/*
     @Override
     public void drawDebugStuff(Graphics2D gfx) {
         gfx.setColor(Color.red);
@@ -106,7 +106,7 @@ public class ScubaDubaAI extends AI {
                 gfx.drawRect((int) t.getMiddle().getX(), (int) t.getMiddle().getY(), tileWidth, tileHeight);
             }
         }
-    }
+    }*/
 
 
     @Override
@@ -244,13 +244,13 @@ public class ScubaDubaAI extends AI {
         int nextDistance = getNextPDistance();
         int allDistance = getAllDistance();
 
-        if(nextDistance / info.getMaxVelocity() < info.getAir()-50) return;
-        if(allDistance / info.getMaxVelocity() < info.getAir()-pearls.size()-50) {
-            return;
+        if(nextDistance / info.getMaxVelocity() < info.getAir()-100) return;
+        if(allDistance / info.getMaxVelocity() < info.getAir()-pearls.size()-100) {
+            return;4
         }
 
 
-        if(pathLength / info.getMaxVelocity() > info.getAir()-50) {
+        if(pathLength / info.getMaxVelocity() > info.getAir()-100) {
 
             if (info.getAir() != info.getMaxAir()) {
 

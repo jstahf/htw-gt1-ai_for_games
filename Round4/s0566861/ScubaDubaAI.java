@@ -3,15 +3,11 @@ package s0566861;
 import lenz.htw.ai4g.ai.*;
 
 import java.awt.*;
-import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.util.List;
-import java.util.Queue;
+import java.awt.geom.*;
 import java.util.*;
+import java.util.List;
 
-public class ScubaDubaAI2 extends AI {
+public class ScubaDubaAI extends AI {
 
     private ArrayList<Point2D> pearls; // holds all remaining pearls
     private ArrayList<Point2D> latePearls; // holds possibly missed or unreachable pearls
@@ -48,7 +44,7 @@ public class ScubaDubaAI2 extends AI {
     private boolean breathed = false; // has just breathed
     private boolean abovePearl = true; // has reached minimum distance from surface to next pearl
 
-    public ScubaDubaAI2(Info info) {
+    public ScubaDubaAI(Info info) {
         super(info);
 
 
@@ -85,7 +81,7 @@ public class ScubaDubaAI2 extends AI {
 
     @Override
     public String getName() {
-        return "ScubaDuba2";
+        return "ScubaDuba";
     }
 
     @Override
@@ -97,7 +93,7 @@ public class ScubaDubaAI2 extends AI {
     public Color getSecondaryColor() {
         return Color.CYAN;
     }
-
+/*
     @Override
     public void drawDebugStuff(Graphics2D gfx) {
         gfx.setColor(Color.red);
@@ -110,7 +106,7 @@ public class ScubaDubaAI2 extends AI {
                 gfx.drawRect((int) t.getMiddle().getX(), (int) t.getMiddle().getY(), tileWidth, tileHeight);
             }
         }
-    }
+    }*/
 
 
     @Override
