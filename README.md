@@ -7,3 +7,4 @@ The goal is to collect all 10 pearls within a certain Time period. Extra points 
 <b>Round 2:</b> Dijkstra/A* algortithm</br>
 <b>Round 3:</b> Additional oxygen management</br>
 <b>Round 4:</b> Collecting trash for upgrades / prioritzing</br>
+<b>Round 5:</b> Streams influencing pathfinding</br>

@@ -134,7 +134,7 @@ public class ScubaDubaAI extends AI {
             abovePearl = true;
         }
 
-        if(itemsBought<2) {
+        if(itemsBought<3) {
             if (money < info.getMoney() || breathed) { // if scored
                 if(!breathed) {
                     removeTrash();
@@ -149,7 +149,7 @@ public class ScubaDubaAI extends AI {
                 checkOxygen(playerPath);
             }
 
-            if((money>=4 || (itemsBought == 1 && money>=2)) && !aboutToShop) {
+            if((money>=2 || (itemsBought == 1 && money>=2) || (itemsBought == 2 && money>=2)) && !aboutToShop) {
                 nextPearl = shopPos;
                 this.playerPath = findPath(playerPos, nextPearl);
                 checkOxygen(playerPath);
@@ -160,16 +160,16 @@ public class ScubaDubaAI extends AI {
                 aboutToShop = false;
                 itemsBought ++;
                 System.out.println(itemsBought);
-                if(itemsBought==2){
+                if(itemsBought==3){
                     nextPearl = getNextPearl();
                     playerPath = findPath(playerPos, nextPearl);
                     checkOxygen(playerPath);
                 }
                 switch (itemsBought) {
                     case 1: return new ShoppingAction(ShoppingItem.BALLOON_SET);
-                    case 2: return new ShoppingAction(ShoppingItem.STREAMLINED_WIG);
-                    case 3: return new ShoppingAction(ShoppingItem.MOTORIZED_FLIPPERS);
-                    case 4: return new ShoppingAction(ShoppingItem.CORNER_CUTTER);
+                    case 3: return new ShoppingAction(ShoppingItem.STREAMLINED_WIG);
+                    case 4: return new ShoppingAction(ShoppingItem.MOTORIZED_FLIPPERS);
+                    case 2: return new ShoppingAction(ShoppingItem.CORNER_CUTTER);
                 }
             }
 
@@ -246,7 +246,7 @@ public class ScubaDubaAI extends AI {
 
         if(nextDistance / info.getMaxVelocity() < info.getAir()-100) return;
         if(allDistance / info.getMaxVelocity() < info.getAir()-pearls.size()-100) {
-            return;4
+            return;
         }
 
 
@@ -300,10 +300,14 @@ public class ScubaDubaAI extends AI {
         for(Tile t : tiles) {
             if(t.isFreespace()) continue;
             if(t.getRect().intersectsLine(lineToTarget)) {
-                Point2D newTarget = path.get(path.size()-1).getMiddle();
-                path.remove(path.get(path.size()-1));
+                try {
+                    Point2D newTarget = path.get(path.size() - 1).getMiddle();
+                    path.remove(path.get(path.size() - 1));
 
-                return avoidObstacles(newTarget, path);
+                    return avoidObstacles(newTarget, path);
+                } catch (IndexOutOfBoundsException e) {
+                    return new Point2D.Double(playerPos.getX(), 0);
+                }
             }
         }
         return  target;
