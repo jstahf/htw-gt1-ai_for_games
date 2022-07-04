@@ -159,15 +159,16 @@ public class ScubaDubaAI extends AI {
             if(aboutToShop && playerPos.distance(shopPos)<20) {
                 aboutToShop = false;
                 itemsBought ++;
+                money-=2;
                 System.out.println(itemsBought);
-                if(itemsBought==3){
-                    nextPearl = getNextPearl();
-                    playerPath = findPath(playerPos, nextPearl);
-                    checkOxygen(playerPath);
-                }
+
+                nextPearl = itemsBought==3 ? getNextPearl() : getNextTrash();
+                playerPath = findPath(playerPos, nextPearl);
+                checkOxygen(playerPath);
+
                 switch (itemsBought) {
-                    case 1: return new ShoppingAction(ShoppingItem.BALLOON_SET);
-                    case 3: return new ShoppingAction(ShoppingItem.STREAMLINED_WIG);
+                    case 3: return new ShoppingAction(ShoppingItem.BALLOON_SET);
+                    case 1: return new ShoppingAction(ShoppingItem.STREAMLINED_WIG);
                     case 4: return new ShoppingAction(ShoppingItem.MOTORIZED_FLIPPERS);
                     case 2: return new ShoppingAction(ShoppingItem.CORNER_CUTTER);
                 }
